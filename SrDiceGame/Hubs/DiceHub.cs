@@ -2,10 +2,9 @@
 
 namespace SrDiceGame.Hubs
 {
-
     public class DiceHub : Hub
     {
-        private readonly static IList<string> _connections = new List<string>();
+        private readonly static HashSet<string> _connections = [];
         private readonly static Dictionary<string, int> _scores = [];
 
         public async Task RollDieAsync()
@@ -59,11 +58,16 @@ namespace SrDiceGame.Hubs
             string id = Context.ConnectionId;
             if (!string.IsNullOrEmpty(id))
             {
-                _connections.Remove(id);
+                if (_connections.Contains(id))
+                {
+                    _connections.Remove(id);
+                }
+                if(_scores.ContainsKey(id))
+                {
+                    _scores.Remove(id);
+                }
             }
             return base.OnDisconnectedAsync(exception);
         }
-
-
     }
 }

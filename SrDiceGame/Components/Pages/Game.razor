@@ -6,7 +6,7 @@
 
 <PageTitle>Home</PageTitle>
 
-<p>Roll the die!</p>
+<p>Roll the die! <br />Add additional players. <a href="/game" target="_blank">+Add player</a></p>
 <button @onclick="RollAsync" disabled="@(!IsConnected || _rolled)">Roll</button>
 @if (_rollMessage != null)
 {
@@ -64,17 +64,21 @@
             InvokeAsync(StateHasChanged);
         });
 
-        hubConnection.On<bool, int>("Result", (winner, winningRoll) =>
+        hubConnection.On<int, int>("Result", (result, winningRoll) =>
         {
 
             _resultMessage = $"Winning roll: {winningRoll} - ";
-            if (winner)
+            if (result == 0)
             {
                 _resultMessage += "YOU WIN!!!";
             }
+            else if(result == 1)
+            {
+                _resultMessage += "DRAW!";
+            }
             else
             {
-                _resultMessage += "Sorry. You Lost.";
+                _resultMessage += "Sorry. You lost.";
             }
 
             InvokeAsync(StateHasChanged);

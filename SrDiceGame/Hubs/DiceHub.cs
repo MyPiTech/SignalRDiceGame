@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using SrDiceGame.Objects;
 
 namespace SrDiceGame.Hubs
 {
@@ -13,21 +12,29 @@ namespace SrDiceGame.Hubs
         {
             string id = Context.ConnectionId;
 
-            //!_scores.Any(s => s.Key == id) to make sure no one is cheating :)
             if (!string.IsNullOrEmpty(id) && !_scores.Any(s => s.Key == id))
             {
                 int roll = new Random().Next(1, 7);
                 _scores.Add(id, roll);
                 await Clients.Client(id).SendAsync("YourRoll", roll);
-                await Clients.AllExcept(id).SendAsync("OtherRolls", roll);
-                
+                await Clients.AllExcept(id).SendAsync("OtherRolls", roll);  
             }
-            //if we have the same amount of scores as connections show the result
-            if (_scores.Count == _connections.Count)
+
+            if (_connections.ToHashSet().SetEquals(_scores.Select(s => s.Key).ToHashSet()))
             {
-                KeyValuePair<string, int> winner = _scores.Aggregate((x, y) => x.Value > y.Value ? x : y);
-                await Clients.Client(winner.Key).SendAsync("Result", true, winner.Value);
-                await Clients.AllExcept(winner.Key).SendAsync("Result", false, winner.Value);
+                var highScore = _scores.Aggregate((x, y) => x.Value > y.Value ? x : y).Value;
+                var winners = _scores.Where(s => s.Value == highScore);
+                var losers = _scores.Where(s => s.Value != highScore);
+
+                foreach(var winner in winners)
+                {
+                    await Clients.Client(winner.Key).SendAsync("Result", winners.Count() > 1 ? 1 : 0, highScore);
+                }
+
+                foreach (var loser in losers)
+                {
+                    await Clients.Client(loser.Key).SendAsync("Result", 2, highScore);
+                }
             }
         }
 
@@ -36,14 +43,15 @@ namespace SrDiceGame.Hubs
             _scores.Clear();
             await Clients.All.SendAsync("Reset");
         }
-        public override Task OnConnectedAsync()
+
+        public async override Task OnConnectedAsync()
         {
             string id = Context.ConnectionId;
             if (!string.IsNullOrEmpty(id))
             {
                 _connections.Add(id);
             }
-            return base.OnConnectedAsync();
+            await base.OnConnectedAsync();
         }
 
         public override Task OnDisconnectedAsync(Exception? exception)

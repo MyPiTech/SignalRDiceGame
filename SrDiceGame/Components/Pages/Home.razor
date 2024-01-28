@@ -8,10 +8,18 @@
     Unlike the other projects I have done recently. I have had no experience with this tech stack.<br />
     I have however, expirmented with this type of functionality many years ago. I have to say this is a huge improvement. <br /><br />
     I managed to throw together this simple dice game in a day. It's pretty rough, and there are some <br />
-    unaddressed bugs around the edge cases of new players joining or dropping off mid-game. That said, it mostly works and <br />
-    with very little effort.<br /><br />
+    unaddressed bugs around the edge cases of new players joining or dropping off mid-game. There is also a 5 WebSocket limit<br />
+    for the free Azure App Service. That said, it mostly works and with very little effort.<br /><br />
     I am looking forward to working with SignalR more. I am already thinking of new things to try. &#128513; <br />
     You can check out the repo <a href="https://github.com/MyPiTech/SignalRDiceGame" target="_blank">here</a>.<br /><br />
+    Play the dice game <a href="/game">here</a>!
+    <ul>
+        <li>Unless you want to win every roll. You'll need additional players.</li>
+        <li>You can compete against yourself by clicking the +Add player link and rolling in the new tab.</li>
+        <li>Players can join after the game is completed but before it is reset to add their rolls.</li>
+        <li>(Bug) Players that disconnect will have their scores removed. But this will not be reflected until another roll is made.</li>
+        <li>(Bug) The Azure free app service only allows for 5 players. Additional players will error out and will not be counted.</li>
+    </ul>
     <h3>Other recent projects</h3>
     <ul>
         <li><a href="https://swcoretestapi.azurewebsites.net/swagger/index.html" target="_blank">.Net Core RESTful API (Swagger Docs)</a></li>

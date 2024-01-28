@@ -1,0 +1,112 @@
+﻿@page "/game"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageTitle>Home</PageTitle>
+
+<p>Roll the die!</p>
+<button @onclick="RollAsync" disabled="@(!IsConnected || _rolled)">Roll</button>
+@if (_rollMessage != null)
+{
+    <div>@_rollMessage</div>
+}
+@if (_otherRolls.Count > 0)
+{
+    <div>
+        Other Rolls:
+        <ul id="otherRollsLst">
+            @foreach (var roll in _otherRolls)
+            {
+                <li>@roll</li>
+            }
+        </ul>
+    </div>
+}
+@if (_resultMessage != null)
+{
+    <div>@_resultMessage</div>
+    <button @onclick="ResetAsync">Reset</button>
+}
+
+@code {
+    private HubConnection? hubConnection;
+    private string? _rollMessage;
+    private string? _resultMessage;
+    private List<int> _otherRolls = new List<int>();
+    private bool _rolled = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/dicehub"))
+            .Build();
+
+        hubConnection.On("Reset", () =>
+        {
+            _rolled = false;
+            _rollMessage = null;
+            _resultMessage = null;
+            _otherRolls.Clear();
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<int>("YourRoll", (roll) =>
+        {
+            _rollMessage = $"Your roll: {roll}";
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<int>("OtherRolls", (roll) =>
+        {
+            _otherRolls.Add(roll);
+            InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.On<bool, int>("Result", (winner, winningRoll) =>
+        {
+
+            _resultMessage = $"Winning roll: {winningRoll} - ";
+            if (winner)
+            {
+                _resultMessage += "YOU WIN!!!";
+            }
+            else
+            {
+                _resultMessage += "Sorry. You Lost.";
+            }
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task RollAsync()
+    {
+        if (hubConnection is not null)
+        {
+            _rolled = true;
+            await hubConnection.InvokeAsync("RollDieAsync");
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.InvokeAsync("ResetAsync");
+        }
+    }
+
+    private bool IsConnected => hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}
